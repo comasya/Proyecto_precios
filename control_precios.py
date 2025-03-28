@@ -3,43 +3,42 @@ import pandas as pd
 import streamlit as st
 import requests
 from bs4 import BeautifulSoup
-import tempfile
 
-# Configura la API de Gemini con tu clave (debe estar en secrets.toml)
+# Configura la API de Gemini con tu clave
 genai.configure(api_key=st.secrets["API_KEY_GEMINI"])
 
 def obtener_precios_mercado_libre(articulo):
-    """Obtiene los nombres, precios y URLs de Mercado Libre para un artículo dado."""
-    url = f"https://listado.mercadolibre.com.ar/{articulo}"
+    """Obtiene los nombres, precios y URLs de Mercado Libre para un artículo."""
+    url = f"https://listado.mercadolibre.com.ar/{articulo.replace(' ', '-')}"
     headers = {"User-Agent": "Mozilla/5.0"}
-    
+
     try:
         response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
-        html_content = response.content
-        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".html")
-        with open(temp_file.name, "wb") as f:
-            f.write(html_content)
-        soup = BeautifulSoup(html_content, 'html.parser')
-        temp_file_path = temp_file.name
-        print(f"Archivo temporal creado en: {temp_file_path}")
+        soup = BeautifulSoup(response.content, 'html.parser')
+
+        # Depuración: Ver el HTML
+        st.write("HTML obtenido:", soup.prettify()[:1000])  # Muestra los primeros 1000 caracteres
 
         resultados = []
-        productos = soup.find_all('div', class_='ui-search-layout__item')
+        productos = soup.find_all('li', class_='ui-search-layout__item')  # Ajustado
 
         for producto in productos:
-            nombre = producto.find('h2', class_='ui-search-item__title')
-            precio = producto.find('span', class_='andes-money-amount__fraction')
+            nombre_elemento = producto.find('h2', class_='ui-search-item__title')
+            precio_elemento = producto.find('span', class_='andes-money-amount__fraction')
             url_elemento = producto.find('a', class_='ui-search-item__group__element')
 
-            if nombre and precio and url_elemento:
-                nombre_texto = nombre.text.strip()
-                precio_texto = precio.text.replace('.', '').strip()
-                precio_valor = int(precio_texto) if precio_texto.isdigit() else None
+            # Depuración: Verificar si encuentra los elementos
+            st.write("Producto encontrado:", nombre_elemento, precio_elemento, url_elemento)
+
+            if nombre_elemento and precio_elemento and url_elemento:
+                nombre = nombre_elemento.text.strip()
+                precio_texto = precio_elemento.text.replace('.', '').strip()
+                precio = int(precio_texto) if precio_texto.isdigit() else None
                 url_producto = url_elemento['href']
 
-                if precio_valor:
-                    resultados.append({'Nombre': nombre_texto, 'Precio': precio_valor, 'URL': url_producto})
+                if precio:
+                    resultados.append({'Nombre': nombre, 'Precio': precio, 'URL': url_producto})
 
         return sorted(resultados, key=lambda x: x['Precio'])[:10] if resultados else []
     
@@ -50,24 +49,6 @@ def obtener_precios_mercado_libre(articulo):
         st.error(f"Ocurrió un error inesperado: {e}")
         return []
 
-def generar_prompt(articulo, precios):
-    """Genera un prompt para la API de Gemini basado en los precios obtenidos."""
-    precios_str = ", ".join([f"{p['Nombre']}: ${p['Precio']}" for p in precios])
-    return (
-        f"El artículo '{articulo}' tiene los siguientes precios en Mercado Libre: {precios_str}.\n"
-        "Proporciona un análisis de estos precios y recomienda un rango óptimo."
-    )
-
-def obtener_respuesta_gemini(prompt):
-    """Obtiene una respuesta de la API de Gemini."""
-    try:
-        model = genai.GenerativeModel('gemini-pro')
-        response = model.generate_content(prompt)
-        return response.candidates[0].text if response.candidates else "No se obtuvo respuesta."
-    except Exception as e:
-        st.error(f"Error al obtener respuesta de Gemini: {e}")
-        return "No se pudo obtener respuesta debido a un error."
-
 def main():
     """Aplicación principal en Streamlit."""
     st.title("🔍 Comparador de Precios en Mercado Libre")
@@ -77,17 +58,14 @@ def main():
         if articulo:
             with st.spinner("Buscando precios..."):
                 precios_mercado_libre = obtener_precios_mercado_libre(articulo)
+                
+                # Depuración: Ver resultados
+                st.write("Resultados obtenidos:", precios_mercado_libre)
+
                 if precios_mercado_libre:
                     st.subheader("📊 Precios Encontrados")
                     df = pd.DataFrame(precios_mercado_libre)
                     st.table(df)
-
-                    # Generar y obtener respuesta de Gemini
-                    prompt = generar_prompt(articulo, precios_mercado_libre)
-                    respuesta = obtener_respuesta_gemini(prompt)
-                    
-                    st.subheader("💡 Recomendación de Precios")
-                    st.write(respuesta)
                 else:
                     st.warning("No se encontraron precios para este artículo.")
         else:
