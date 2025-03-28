@@ -2,7 +2,7 @@ import google.generativeai as genai
 import pandas as pd
 import streamlit as st
 import requests
-from bs4 import BeautifulSoup # type: ignore
+from bs4 import BeautifulSoup
 
 # Configura la API de Gemini con tu clave (debe estar en secrets.toml)
 genai.configure(api_key=st.secrets["API_KEY_GEMINI"])
@@ -37,11 +37,11 @@ def obtener_precios_mercado_libre(articulo):
     
     except requests.exceptions.RequestException as e:
         st.error(f"Error al obtener precios de Mercado Libre: {e}")
-        return []
+        return None
     
     except Exception as e:
         st.error(f"Ocurrió un error inesperado: {e}")
-        return []
+        return None
 
 def generar_prompt(articulo, precios_mercado_libre):
     """Genera un prompt para la API de Gemini."""
@@ -62,19 +62,22 @@ def main():
             with st.spinner("Buscando precios..."):
                 precios_mercado_libre = obtener_precios_mercado_libre(articulo)
 
-                if precios_mercado_libre and isinstance(precios_mercado_libre[0], int):
-                    prompt = generar_prompt(articulo, precios_mercado_libre)
-                    respuesta = obtener_respuesta_gemini(prompt)
+                if precios_mercado_libre:
+                    if isinstance(precios_mercado_libre[0], int):
+                        prompt = generar_prompt(articulo, precios_mercado_libre)
+                        respuesta = obtener_respuesta_gemini(prompt)
 
-                    # Mostrar resultados
-                    df = pd.DataFrame({"Top 10 Precios": precios_mercado_libre})
-                    st.subheader("📊 Precios encontrados")
-                    st.dataframe(df)
+                        # Mostrar resultados
+                        df = pd.DataFrame({"Top 10 Precios": precios_mercado_libre})
+                        st.subheader("📊 Precios encontrados")
+                        st.dataframe(df)
 
-                    st.subheader("💡 Recomendación de Precios")
-                    st.write(respuesta)
+                        st.subheader("💡 Recomendación de Precios")
+                        st.write(respuesta)
+                    else:
+                        st.warning("No se encontraron precios válidos para este artículo.")
                 else:
-                    st.warning("No se encontraron precios válidos para este artículo.")
+                    st.warning("No se encontraron precios para este artículo.")
         else:
             st.warning("Por favor, ingrese un artículo.")
 
