@@ -15,7 +15,10 @@ def obtener_precios_mercado_libre(articulo):
     try:
         response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
-        soup = BeautifulSoup(response.content, 'html.parser')
+        html_content = response.content
+        with open("temp.html", "wb") as f:
+            f.write(html_content)
+        soup = BeautifulSoup(html_content, 'html.parser')
 
         productos = soup.find_all('li', class_='ui-search-layout__item')
         resultados = []
