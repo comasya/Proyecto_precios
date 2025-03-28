@@ -16,6 +16,7 @@ def obtener_precios_mercado_libre(articulo):
     try:
         response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
+        print(response.content)
         soup = BeautifulSoup(response.content, 'html.parser')
 
         productos = soup.find_all('li', class_='ui-search-layout__item')
@@ -31,6 +32,7 @@ def obtener_precios_mercado_libre(articulo):
                 precio_texto = precio.text.replace('.', '').strip()
                 precio_valor = int(precio_texto) if precio_texto.isdigit() else None
                 url_producto = url_elemento['href']
+                print(f"Nombre: {nombre_texto}, Precio: {precio_texto}")
                 
                 if precio_valor:
                     resultados.append({'Nombre': nombre_texto, 'Precio': precio_valor, 'URL': url_producto})
