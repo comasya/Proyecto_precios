@@ -9,9 +9,13 @@ genai.configure(api_key=st.secrets["API_KEY_GEMINI"])
 
 def obtener_respuesta_gemini(prompt):
     """Obtiene una respuesta de la API de Gemini."""
-    model = genai.GenerativeModel('gemini-pro')
-    response = model.generate_content(prompt)
-    return response.candidates[0].text if response.candidates else "No se obtuvo respuesta."
+    try:
+        model = genai.GenerativeModel('gemini-pro')
+        response = model.generate_content(prompt)
+        return response.candidates[0].text if response.candidates else "No se obtuvo respuesta."
+    except Exception as e:
+        st.error(f"Error al inicializar el modelo Gemini: {e}")
+        return "No se pudo obtener respuesta debido a un error."
 
 def obtener_precios_mercado_libre(articulo):
     """Obtiene precios de Mercado Libre para un artículo dado."""
