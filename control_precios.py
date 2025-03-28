@@ -29,13 +29,13 @@ def obtener_precios_mercado_libre(articulo):
             url_elemento = producto.find('a', class_='ui-search-item__group__element')
 
             # Depuración: Verificar si encuentra los elementos
-            st.write("Producto encontrado:", nombre_elemento, precio_elemento, url_elemento)
+            st.write("Producto encontrado:", nombre_elemento, precio_elemento)
 
-            if nombre_elemento and precio_elemento and url_elemento:
+            if nombre_elemento and precio_elemento:
                 nombre = nombre_elemento.text.strip()
                 precio_texto = precio_elemento.text.replace('.', '').strip()
                 precio = int(precio_texto) if precio_texto.isdigit() else None
-                url_producto = url_elemento['href']
+                
 
                 if precio:
                     resultados.append({'Nombre': nombre, 'Precio': precio, 'URL': url_producto})
