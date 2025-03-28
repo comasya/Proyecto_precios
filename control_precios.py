@@ -27,17 +27,30 @@ def obtener_precios_mercado_libre(articulo):
         response.raise_for_status()
         soup = BeautifulSoup(response.content, 'html.parser')
 
-        # Extraer precios de Mercado Libre
-        precios_elementos = soup.find_all('span', class_='andes-money-amount__fraction')
-        precios = []
+        # Extraer información de los productos
+        productos = soup.find_all('li', class_='ui-search-layout__item')
+        resultados = []
 
-        for elemento in precios_elementos:
-            precio_texto = elemento.text.replace('.', '').strip()
-            if precio_texto.isdigit():
-                precios.append(int(precio_texto))
+        for producto in productos:
+            # Extraer el precio
+            precio_elemento = producto.find('span', class_='andes-money-amount__fraction')
+            precio_texto = precio_elemento.text.replace('.', '').strip() if precio_elemento else None
+            precio = int(precio_texto) if precio_texto and precio_texto.isdigit() else None
 
-        # Obtener el Top 10 de precios más bajos
-        return sorted(precios)[:10] if precios else ["No se encontraron precios"]
+            # Extraer el nombre del artículo
+            nombre_elemento = producto.find('h2', class_='ui-search-item__title')
+            nombre = nombre_elemento.text.strip() if nombre_elemento else None
+
+            # Extraer la URL del producto
+            url_elemento = producto.find('a', class_='ui-search-item__group__element')
+            url = url_elemento['href'] if url_elemento else None
+
+            if precio and nombre and url:
+                resultados.append({'nombre': nombre, 'precio': precio, 'url': url})
+
+        # Ordenar por precio y obtener el Top 10
+        resultados_ordenados = sorted(resultados, key=lambda x: x['precio'])[:10]
+        return resultados_ordenados if resultados_ordenados else ["No se encontraron precios"]
     
     except requests.exceptions.RequestException as e:
         st.error(f"Error al obtener precios de Mercado Libre: {e}")
@@ -72,9 +85,12 @@ def main():
                         respuesta = obtener_respuesta_gemini(prompt)
 
                         # Mostrar resultados
-                        df = pd.DataFrame({"Top 10 Precios": precios_mercado_libre})
                         st.subheader("📊 Precios encontrados")
-                        st.dataframe(df)
+                        for producto in precios_mercado_libre:
+                            st.write(f"**Nombre:** {producto['nombre']}")
+                            st.write(f"**Precio:** {producto['precio']}")
+                            st.write(f"[Ver en Mercado Libre]({producto['url']})")
+                            st.write("---")
 
                         st.subheader("💡 Recomendación de Precios")
                         st.write(respuesta)
