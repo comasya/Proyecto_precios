@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 import os
 
 # Configura la API Key desde una variable de entorno
-GENAI_API_KEY = os.getenv("GENAI_API_KEY")
+genai.configure(api_key=st.secrets["API_KEY_GEMINI"])
 if not GENAI_API_KEY:
     st.error("Falta la API Key de Gemini. Defínela como una variable de entorno.")
 else:
