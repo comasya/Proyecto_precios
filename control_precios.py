@@ -25,18 +25,19 @@ def obtener_precios_mercado_libre(articulo):
         print(f"Archivo temporal creado en: {temp_file_path}")
 
         resultados = []
+        productos = soup.find_all('div', class_='ui-search-layout__item')
 
         for producto in productos:
             nombre = producto.find('h2', class_='ui-search-item__title')
             precio = producto.find('span', class_='andes-money-amount__fraction')
             url_elemento = producto.find('a', class_='ui-search-item__group__element')
-            
+
             if nombre and precio and url_elemento:
                 nombre_texto = nombre.text.strip()
                 precio_texto = precio.text.replace('.', '').strip()
                 precio_valor = int(precio_texto) if precio_texto.isdigit() else None
                 url_producto = url_elemento['href']
-                
+
                 if precio_valor:
                     resultados.append({'Nombre': nombre_texto, 'Precio': precio_valor, 'URL': url_producto})
 
