@@ -3,6 +3,7 @@ import pandas as pd
 import streamlit as st
 import requests
 from bs4 import BeautifulSoup
+import tempfile
 
 # Configura la API de Gemini con tu clave (debe estar en secrets.toml)
 genai.configure(api_key=st.secrets["API_KEY_GEMINI"])
@@ -16,11 +17,13 @@ def obtener_precios_mercado_libre(articulo):
         response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
         html_content = response.content
-        with open("temp.html", "wb") as f:
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".html")
+        with open(temp_file.name, "wb") as f:
             f.write(html_content)
         soup = BeautifulSoup(html_content, 'html.parser')
+        temp_file_path = temp_file.name
+        print(f"Archivo temporal creado en: {temp_file_path}")
 
-        productos = soup.find_all('li', class_='ui-search-layout__item')
         resultados = []
 
         for producto in productos:
